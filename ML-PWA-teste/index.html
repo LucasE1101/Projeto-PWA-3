@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 Lista de Filmes</title>
+
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2b7a78">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('cinema.jpg') no-repeat center center fixed;
+      background-size: cover;
+      margin: 20px;
+      color: #333;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    section {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    ul { list-style: none; padding: 0; }
+    li {
+      padding: 6px;
+      margin: 4px 0;
+      background: #e9ecef;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      margin-left: 5px;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .assistido { background: #4caf50; color: white; }
+    .favorito { background: #ff9800; color: white; }
+    .remover { background: #f44336; color: white; }
+    .categoria {
+      font-size: 0.8em;
+      padding: 2px 6px;
+      margin-left: 8px;
+      border-radius: 4px;
+      background: #2196f3;
+      color: white;
+    }
+    input, select {
+      padding: 6px;
+      margin: 4px 0;
+      width: 70%;
+      max-width: 300px;
+    }
+    .barra-controle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .capa {
+      width: 100px;
+      height: 150px;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    .filme-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎬 Minha Lista de Filmes</h1>
+
+  <!-- Barra de pesquisa e filtro -->
+  <div class="barra-controle">
+    <input type="text" id="pesquisa" placeholder="🔎 Pesquisar filme">
+    <select id="filtroCategoria">
+      <option value="todas">Todas as Categorias</option>
+      <option value="Ação">Ação</option>
+      <option value="Drama">Drama</option>
+      <option value="Comédia">Comédia</option>
+      <option value="Terror">Terror</option>
+      <option value="Ficção">Ficção</option>
+      <option value="Aventura">Aventura</option>
+      <option value="Animação">Animação</option>
+    </select>
+  </div>
+
+  <!-- Função para Adicionar o Filme -->
+  <section>
+    <h2>Adicionar Filme</h2>
+    <input type="text" id="novoFilme" placeholder="Digite o nome do filme">
+    <input type="text" id="urlCapa" placeholder="Cole a URL da imagem da capa">
+    <select id="novaCategoria">
+      <option value="Ação">Ação</option>
+      <option value="Drama">Drama</option>
+      <option value="Comédia">Comédia</option>
+      <option value="Terror">Terror</option>
+      <option value="Ficção">Ficção</option>
+      <option value="Aventura">Aventura</option>
+      <option value="Animação">Animação</option>
+    </select>
+    <button onclick="adicionarFilme()">Adicionar</button>
+  </section>
+
+  <section>
+    <h2>Todos os Filmes</h2>
+    <ul id="todosFilmes"></ul>
+  </section>
+
+  <section>
+    <h2>Filmes para Assistir</h2>
+    <ul id="paraAssistir"></ul>
+  </section>
+
+  <section>
+    <h2>Filmes Assistidos</h2>
+    <ul id="assistidos"></ul>
+  </section>
+
+  <section>
+    <h2>Filmes Favoritos</h2>
+    <ul id="favoritos"></ul>
+  </section>
+
+  <script>
+    // Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("✅ Service Worker registrado!"))
+        .catch(err => console.error("❌ Erro no Service Worker:", err));
+    }
+
+    const todosFilmes = document.getElementById("todosFilmes");
+    const paraAssistir = document.getElementById("paraAssistir");
+    const assistidos = document.getElementById("assistidos");
+    const favoritos = document.getElementById("favoritos");
+
+    const inputFilme = document.getElementById("novoFilme");
+    const inputCapa = document.getElementById("urlCapa");
+    const selectCategoria = document.getElementById("novaCategoria");
+    const pesquisa = document.getElementById("pesquisa");
+    const filtroCategoria = document.getElementById("filtroCategoria");
+
+    let filmes = JSON.parse(localStorage.getItem("filmes")) || [];
+
+    function salvarFilmes() {
+      localStorage.setItem("filmes", JSON.stringify(filmes));
+    }
+
+    function atualizarListas() {
+      todosFilmes.innerHTML = "";
+      paraAssistir.innerHTML = "";
+      assistidos.innerHTML = "";
+      favoritos.innerHTML = "";
+
+      const termoPesquisa = pesquisa.value.toLowerCase();
+      const filtro = filtroCategoria.value;
+
+      filmes.forEach((filme, index) => {
+        const correspondePesquisa = !termoPesquisa || filme.nome.toLowerCase().includes(termoPesquisa);
+        const correspondeFiltro = filtro === "todas" || filme.categoria === filtro;
+
+        if (correspondePesquisa && correspondeFiltro) {
+          todosFilmes.appendChild(criarItemFilme(filme, index));
+        }
+        if (!filme.assistido) {
+          paraAssistir.appendChild(criarItemFilme(filme, index));
+        }
+        if (filme.assistido) {
+          assistidos.appendChild(criarItemFilme(filme, index));
+        }
+        if (filme.favorito) {
+          favoritos.appendChild(criarItemFilme(filme, index));
+        }
+      });
+    }
+
+    function criarItemFilme(filme, index) {
+      const li = document.createElement("li");
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "filme-info";
+      infoDiv.innerHTML = `
+        ${filme.capa ? `<img src="${filme.capa}" alt="Capa de ${filme.nome}" class="capa">` : ''}
+        <span>${filme.nome} <span class="categoria">${filme.categoria}</span></span>
+      `;
+      li.appendChild(infoDiv);
+
+      const btnAssistido = document.createElement("button");
+      btnAssistido.textContent = filme.assistido ? "❌ Desmarcar" : "✔ Assistido";
+      btnAssistido.className = "assistido";
+      btnAssistido.onclick = () => {
+        filmes[index].assistido = !filmes[index].assistido;
+        salvarFilmes();
+        atualizarListas();
+      };
+      li.appendChild(btnAssistido);
+
+      const btnFavorito = document.createElement("button");
+      btnFavorito.textContent = filme.favorito ? "💔 Remover Favorito" : "★ Favorito";
+      btnFavorito.className = "favorito";
+      btnFavorito.onclick = () => {
+        filmes[index].favorito = !filmes[index].favorito;
+        salvarFilmes();
+        atualizarListas();
+      };
+      li.appendChild(btnFavorito);
+
+      const btnRemover = document.createElement("button");
+      btnRemover.textContent = "🗑 Remover";
+      btnRemover.className = "remover";
+      btnRemover.onclick = () => {
+        filmes.splice(index, 1);
+        salvarFilmes();
+        atualizarListas();
+      };
+      li.appendChild(btnRemover);
+
+      return li;
+    }
+
+    function adicionarFilme() {
+      const nome = inputFilme.value.trim();
+      const capa = inputCapa.value.trim();
+      const categoria = selectCategoria.value;
+
+      if (nome === "") return;
+
+      filmes.push({ nome, categoria, capa, assistido: false, favorito: false });
+      inputFilme.value = "";
+      inputCapa.value = "";
+      salvarFilmes();
+      atualizarListas();
+    }
+
+    pesquisa.addEventListener("input", atualizarListas);
+    filtroCategoria.addEventListener("change", atualizarListas);
+
+    atualizarListas();
+  </script>
+
+</body>
+</html>
