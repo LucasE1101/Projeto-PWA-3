@@ -3,12 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎬 Lista de Filmes</title>
-
-  <!-- Manifest PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2b7a78">
-
+  <title>🎬 Lista de Filmes</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +13,10 @@
       margin: 20px;
       color: #333;
     }
-    h1 { text-align: center; margin-bottom: 20px; }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     section {
       background: #fff;
       padding: 15px;
@@ -25,7 +24,10 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    ul { list-style: none; padding: 0; }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
     li {
       padding: 6px;
       margin: 4px 0;
@@ -103,7 +105,13 @@
   <section>
     <h2>Adicionar Filme</h2>
     <input type="text" id="novoFilme" placeholder="Digite o nome do filme">
+    
+    <!-- Input de URL da capa (PC) -->
     <input type="text" id="urlCapa" placeholder="Cole a URL da imagem da capa">
+    
+    <!-- Input de imagem da galeria (Celular) -->
+    <input type="file" id="fileCapa" accept="image/*">
+
     <select id="novaCategoria">
       <option value="Ação">Ação</option>
       <option value="Drama">Drama</option>
@@ -137,11 +145,8 @@
   </section>
 
   <script>
-    // Registro do Service Worker para PWA
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("✅ Service Worker registrado!"))
-        .catch(err => console.error("❌ Erro no Service Worker:", err));
+      navigator.serviceWorker.register('sw.js');
     }
 
     const todosFilmes = document.getElementById("todosFilmes");
@@ -151,6 +156,7 @@
 
     const inputFilme = document.getElementById("novoFilme");
     const inputCapa = document.getElementById("urlCapa");
+    const inputFile = document.getElementById("fileCapa");
     const selectCategoria = document.getElementById("novaCategoria");
     const pesquisa = document.getElementById("pesquisa");
     const filtroCategoria = document.getElementById("filtroCategoria");
@@ -177,12 +183,15 @@
         if (correspondePesquisa && correspondeFiltro) {
           todosFilmes.appendChild(criarItemFilme(filme, index));
         }
+
         if (!filme.assistido) {
           paraAssistir.appendChild(criarItemFilme(filme, index));
         }
+
         if (filme.assistido) {
           assistidos.appendChild(criarItemFilme(filme, index));
         }
+
         if (filme.favorito) {
           favoritos.appendChild(criarItemFilme(filme, index));
         }
@@ -191,6 +200,7 @@
 
     function criarItemFilme(filme, index) {
       const li = document.createElement("li");
+
       const infoDiv = document.createElement("div");
       infoDiv.className = "filme-info";
       infoDiv.innerHTML = `
@@ -234,14 +244,32 @@
 
     function adicionarFilme() {
       const nome = inputFilme.value.trim();
-      const capa = inputCapa.value.trim();
+      const capaUrl = inputCapa.value.trim();
+      const file = inputFile.files[0];
       const categoria = selectCategoria.value;
 
       if (nome === "") return;
 
-      filmes.push({ nome, categoria, capa, assistido: false, favorito: false });
+      if (capaUrl) {
+        filmes.push({ nome, categoria, capa: capaUrl, assistido: false, favorito: false });
+        finalizarAdicao();
+      } else if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          filmes.push({ nome, categoria, capa: e.target.result, assistido: false, favorito: false });
+          finalizarAdicao();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        filmes.push({ nome, categoria, capa: "", assistido: false, favorito: false });
+        finalizarAdicao();
+      }
+    }
+
+    function finalizarAdicao() {
       inputFilme.value = "";
       inputCapa.value = "";
+      inputFile.value = "";
       salvarFilmes();
       atualizarListas();
     }
@@ -254,3 +282,5 @@
 
 </body>
 </html>
+
+
