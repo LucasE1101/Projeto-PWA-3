@@ -1,11 +1,14 @@
 {
   "name": "Minha Lista de Filmes 🎬",
   "short_name": "Filmes",
+  "description": "Gerencie sua lista de filmes: adicionar, marcar assistidos, favoritar e muito mais.",
   "start_url": "index.html",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2b7a78",
   "orientation": "portrait",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon-192.png",
